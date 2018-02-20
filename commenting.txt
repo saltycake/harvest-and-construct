@@ -1,0 +1,8 @@
+
+Commenting style:
+
+Notes: "// <name>(NOTE): (the comment here)"
+
+Performance concerns: "// <name>(PERF): (the comment here)"
+
+Hacks/dirty fixes: "// <name>(HACK): (the comment here)"
