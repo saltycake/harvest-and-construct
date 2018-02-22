@@ -18,6 +18,10 @@ typedef struct {
   u8 *data;
 } string_t;
 
+#define BOOLEAN_STRING(x) (x ? cake"true" : cake"false")
+#define NULL_STRING cake"(null)"
+#define EMPTY_STRING cake("");
+
 
 // saltycake(HACK): This is for Windows. I haven't compiled the preprocessor for Windows yet.
 string_t cake(char const *str) {
@@ -44,8 +48,31 @@ void free_string(string_t *s) {
   memset(s, 0, sizeof(string_t));
 }
 
-#define BOOLEAN_STRING(x) (x ? cake"true" : cake"false")
-#define NULL_STRING cake"(null)"
+string_t temp_concatenate(u64 n, ...) {
+  if(!n)
+    return EMPTY_STRING;
+  
+  string_t s = {};
+  
+  va_list args;
+  va_start(args, n);
+  for(u64 i = 0; i < n; ++i)
+    s.size += va_arg(args, string_t).size;
+  va_end(args);
+  
+  s.data = temp_allocate(s.size);
+  
+  u8 *cursor = s.data;
+  va_start(args, n);
+  for(u64 i = 0; i < n; ++i) {
+    string_t arg = va_arg(args, string_t);
+    memcpy(cursor, arg.data, arg.size);
+    cursor += arg.size;
+  }
+  va_end(args);
+  
+  return s;
+}
 
 static inline string_t copy_string(string_t s) {
   string_t copy;
@@ -398,6 +425,8 @@ string_t hc_vsprint(memory_allocate_t ma, string_t format, va_list list) {
   for(u8 *it = format.data; it < format_end; ++it)
     arg_count += (*it == (u8)'%' && is_print_arg(it + 1, format_end - it - 1));
   
+  //printf("printing '%s'\n", format.data);
+  
   if(!arg_count)
     return copy_string(format);
   
@@ -424,6 +453,8 @@ string_t hc_vsprint(memory_allocate_t ma, string_t format, va_list list) {
         info, list1, it + 1, format_end - it - 1, &cuts[i + 1].data
       );
     } while(!could_extract_info);
+    
+    //printf("pai[%lu].length = %lu\n", i, info->length);
     
     cuts[i].size = it - cuts[i].data;
     s.size += info->length + cuts[i].size;

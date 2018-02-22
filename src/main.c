@@ -4,14 +4,15 @@
 #include "basic.h"
 #include "mathstuff.h"
 #include "memorystuff.h"
-#include "stringstuff.h.precaked"
+#include "stringstuff.h"
+//#include "pthreads.h"
 
 SDL_Window *the_window = NULL;
 
 u8 initialize() {
   if(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO) != 0) {
     string_t error = temp_string_from_cstr(SDL_GetError());
-    hc_print(cake"SDL_Init failed: '%str'\n", error);
+    hc_print(cake("SDL_Init failed: '%str'\n"), error);
     return FALSE;
   }
   
@@ -26,7 +27,7 @@ u8 initialize() {
   
   if(!the_window) {
     string_t error = temp_string_from_cstr(SDL_GetError());
-    hc_print(cake"SDL_CreateWindow failed: '%str'\n", error);
+    hc_print(cake("SDL_CreateWindow failed: '%str'\n"), error);
     return FALSE;
   }
   
@@ -42,10 +43,20 @@ typedef struct {
   f32 x, y, z;
 } v3;
 
+#ifdef WIN64
+#include <windows.h>
+#endif
+
+#ifdef LINUX64
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+#endif
+
 int main(int argc, char **argv) {
   
   // saltucake(NOTE): These are just some string function tests.
-  string_t name = cake"Aino";
+  string_t name = cake("Aino");
   
   hc_print(cake("Help me, %str.\n"), name);
   
@@ -84,8 +95,26 @@ int main(int argc, char **argv) {
     }
   }
   
-  
   deinitialize();
+  
+  #ifdef WIN64
+  getch();
+  #else
+  struct termios orig_config;
+  tcgetattr(STDIN_FILENO, &orig_config);
+  
+  struct termios io_config = orig_config;
+  io_config.c_lflag &= ~ICANON;
+  io_config.c_cc[VMIN] = 1;
+  io_config.c_cc[VTIME] = 0;
+  tcsetattr(STDIN_FILENO, 0, &io_config);
+  u8 input_char;
+  
+  hc_puts(cake("Press any key to exit.\n"));
+  read(STDIN_FILENO, &input_char, sizeof(u8));
+  
+  tcsetattr(STDIN_FILENO, 0, &orig_config);
+  #endif
   
   return 0;
 }
